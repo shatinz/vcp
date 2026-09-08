@@ -1,0 +1,401 @@
+/* VCP Isolated Shadow DOM Styles */
+
+:host {
+  all: initial;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2147483647;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Layer 0: Hover Highlight Box */
+.vcp-highlight-box {
+  position: fixed;
+  pointer-events: none;
+  border: 2px dashed #6366f1;
+  background-color: rgba(99, 102, 241, 0.12);
+  border-radius: 4px;
+  transition: all 0.05s ease-out;
+  z-index: 20;
+  display: none;
+}
+
+.vcp-highlight-label {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Layer 1: Pin Markers */
+.vcp-pins-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.vcp-pin {
+  position: fixed;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.45), 0 0 0 2px #ffffff;
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.vcp-pin:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.6), 0 0 0 3px #ffffff;
+}
+
+.vcp-pin.unanchored {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.45), 0 0 0 2px #ffffff;
+}
+
+.vcp-pin-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e1b4b;
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vcp-pin:hover .vcp-pin-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Layer 2: Popover Card */
+.vcp-popover {
+  position: fixed;
+  width: 320px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+  pointer-events: auto;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: vcp-pop-in 0.15s ease-out;
+}
+
+@keyframes vcp-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.vcp-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.vcp-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+
+.vcp-element-tag {
+  color: #64748b;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vcp-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vcp-close-btn:hover {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.vcp-popover-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vcp-element-preview {
+  font-size: 11px;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #6366f1;
+  max-height: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vcp-textarea {
+  width: 100%;
+  height: 85px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0f172a;
+  line-height: 1.4;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+}
+
+.vcp-textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.vcp-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.vcp-quick-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vcp-tag-chip {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  user-select: none;
+}
+
+.vcp-tag-chip:hover {
+  background: #e0e7ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
+.vcp-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+}
+
+.vcp-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+.vcp-btn:active {
+  transform: translateY(1px);
+}
+
+.vcp-btn-primary {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.vcp-btn-primary:hover {
+  background: #4338ca;
+}
+
+.vcp-btn-ghost {
+  background: transparent;
+  color: #64748b;
+}
+
+.vcp-btn-ghost:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.vcp-btn-danger {
+  background: transparent;
+  color: #ef4444;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.vcp-btn-danger:hover {
+  background: #fee2e2;
+}
+
+/* Layer 3: Floating On-Screen HUD Bar */
+.vcp-hud {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  z-index: 60;
+  user-select: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.vcp-hud-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.vcp-hud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6366f1;
+}
+
+.vcp-hud-title {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.vcp-hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vcp-hud-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.vcp-hud-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.vcp-hud-toggle.active {
+  background: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+}
+
+.vcp-hud-counter {
+  background: rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+}
+
+.vcp-hud-action {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.vcp-hud-action:hover {
+  background: #16a34a;
+}

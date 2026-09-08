@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visual Click Prompt</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-logo">
+          <div class="brand-dot"></div>
+          <span>VCP</span>
+        </div>
+        <span class="version-tag">v1.0</span>
+      </div>
+      <div class="server-status" id="server-status-pill" title="Local Bridge Status">
+        <span class="status-indicator"></span>
+        <span class="status-text">Checking...</span>
+      </div>
+    </header>
+
+    <!-- Project Workspace Selector -->
+    <section class="section project-section">
+      <label class="section-label" for="project-input">Target Antigravity Project</label>
+      <div class="input-with-action">
+        <input type="text" id="project-input" class="text-input" placeholder="e.g. C:\prj\vcp" value="C:\prj\vcp">
+        <button id="project-save-btn" class="btn btn-secondary btn-sm">Set</button>
+      </div>
+      <div class="recent-projects" id="recent-projects-list"></div>
+    </section>
+
+    <!-- Inspection Toggle -->
+    <section class="section inspection-section">
+      <button id="toggle-inspect-btn" class="btn btn-inspect">
+        <span class="inspect-icon">🎯</span>
+        <span id="inspect-btn-text">Turn ON Pin Mode (Alt+Shift+V)</span>
+      </button>
+    </section>
+
+    <!-- Filter Tabs -->
+    <section class="section">
+      <div class="tab-group">
+        <button class="tab active" id="tab-current">Current Page (<span id="count-current">0</span>)</button>
+        <button class="tab" id="tab-all">All Website Pages (<span id="count-all">0</span>)</button>
+      </div>
+
+      <!-- Pin Cards List -->
+      <div class="pins-list" id="pins-list">
+        <div class="empty-state">
+          <div class="empty-icon">📌</div>
+          <p>No pins captured yet.</p>
+          <span>Turn ON Pin Mode and click any text, button, or container on the website to add prompts.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Macro / Additional Prompt -->
+    <section class="section">
+      <label class="section-label" for="macro-prompt">Macro Prompt for Agent (Optional)</label>
+      <textarea id="macro-prompt" class="textarea-input" placeholder="Add overarching instructions for Antigravity (e.g. Follow Tailwind best practices, preserve responsiveness...)"></textarea>
+    </section>
+
+    <!-- Footer Actions -->
+    <footer class="footer">
+      <button id="clear-pins-btn" class="btn btn-ghost btn-sm" title="Clear all pins on this page">Clear Page Pins</button>
+      <button id="send-agent-btn" class="btn btn-primary">
+        <span>⚡ Send to Antigravity</span>
+      </button>
+    </footer>
+
+    <!-- Result / Toast Banner -->
+    <div id="toast-banner" class="toast-banner"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

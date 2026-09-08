@@ -1,0 +1,41 @@
+# 🎯 Visual Click Prompt — In-Context Task Brief
+
+> **Generated on:** `2026-09-08T08:38:22.731Z`  
+> **Target Page:** [https://myshop.dev/products/shoes](https://myshop.dev/products/shoes) (`/products/shoes`)  
+> **Project Workspace:** `C:\prj\vcp`  
+> **Total Annotated Elements:** **2**
+
+## 📢 Macro / Overall Directive
+> Make sure high contrast accessibility rules are met across all updated buttons.
+
+---
+
+## 📌 Element Modification Details
+
+### Pin #1: `<button>`
+- **User Instruction / Prompt:** **Change button background to #059669 and increase font size to 18px.**
+- **Selector:** `main > div.product-card > button.btn-primary`
+- **Identifier (TestID/ID):** `add-to-cart-btn`
+- **Text Context:** "Add to Cart - $99"
+- **XPath:** `/html/body/main/div[1]/button`
+- **Computed Styles:** `color: rgb(255, 255, 255); bg: rgb(59, 130, 246); font: 14px (600); display: flex`
+
+```html
+<button data-testid="add-to-cart-btn" class="btn-primary">Add to Cart - $99</button>
+```
+
+---
+
+### Pin #2: `<h1>`
+- **User Instruction / Prompt:** **Align product title left and fix mobile text wrap.**
+- **Selector:** `h1.product-title`
+- **Text Context:** "Ultralight Running Shoes"
+- **Computed Styles:** `color: rgb(15, 23, 42); bg: undefined; font: 28px (700); display: block`
+
+---
+
+## 🤖 Antigravity Execution Instructions
+1. Locate the corresponding component files or styles in the codebase using the selectors, test IDs, and text snippets listed above.
+2. Implement each pin's requested modifications accurately.
+3. Maintain responsive layouts, clean code, and zero regressions.
+4. Verify changes against the target page.

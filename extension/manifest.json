@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Visual Click Prompt (VCP)",
+  "version": "1.0.0",
+  "description": "Interactive visual in-context prompting on live websites with persistent pins and direct Antigravity agent bridge.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Visual Click Prompt"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://127.0.0.1:*/*",
+    "http://localhost:*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["drawing-layer.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "toggle-inspect": {
+      "suggested_key": {
+        "default": "Alt+Shift+V",
+        "mac": "Alt+Shift+V"
+      },
+      "description": "Toggle Visual Pin / Inspect Mode"
+    }
+  }
+}

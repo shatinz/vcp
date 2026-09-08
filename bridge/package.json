@@ -1,0 +1,13 @@
+{
+  "name": "vcp-bridge",
+  "version": "1.0.0",
+  "description": "Local Antigravity Bridge Daemon for Visual Click Prompt",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-bridge.js"
+  },
+  "keywords": ["antigravity", "chrome-extension", "visual-feedback", "ai-agent"],
+  "author": "",
+  "license": "MIT"
+}

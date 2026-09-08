@@ -1,0 +1,53 @@
+{
+  "projectPath": "C:\\prj\\vcp",
+  "url": "https://myshop.dev/products/shoes",
+  "origin": "https://myshop.dev",
+  "normalizedPath": "/products/shoes",
+  "filterMode": "current",
+  "macroPrompt": "Make sure high contrast accessibility rules are met across all updated buttons.",
+  "pins": [
+    {
+      "index": 1,
+      "url": "https://myshop.dev/products/shoes",
+      "normalizedPath": "/products/shoes",
+      "prompt": "Change button background to #059669 and increase font size to 18px.",
+      "anchor": {
+        "tagName": "button",
+        "testId": "add-to-cart-btn",
+        "stableId": "buy-now",
+        "cssSelector": "main > div.product-card > button.btn-primary",
+        "xpath": "/html/body/main/div[1]/button",
+        "textQuote": {
+          "exact": "Add to Cart - $99"
+        },
+        "computedStyles": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(59, 130, 246)",
+          "fontSize": "14px",
+          "fontWeight": "600",
+          "display": "flex"
+        },
+        "outerHtml": "<button data-testid=\"add-to-cart-btn\" class=\"btn-primary\">Add to Cart - $99</button>"
+      }
+    },
+    {
+      "index": 2,
+      "url": "https://myshop.dev/products/shoes",
+      "normalizedPath": "/products/shoes",
+      "prompt": "Align product title left and fix mobile text wrap.",
+      "anchor": {
+        "tagName": "h1",
+        "cssSelector": "h1.product-title",
+        "textQuote": {
+          "exact": "Ultralight Running Shoes"
+        },
+        "computedStyles": {
+          "color": "rgb(15, 23, 42)",
+          "fontSize": "28px",
+          "fontWeight": "700",
+          "display": "block"
+        }
+      }
+    }
+  ]
+}
