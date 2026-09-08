@@ -1,0 +1,51 @@
+{
+  "projectPath": "C:\\prj\\vcp",
+  "url": "https://siam-nu.vercel.app/shop",
+  "origin": "https://siam-nu.vercel.app",
+  "normalizedPath": "/shop",
+  "filterMode": "current",
+  "macroPrompt": "",
+  "pins": [
+    {
+      "anchor": {
+        "computedStyles": {
+          "backgroundColor": "oklab(0 0 0 / 0.6)",
+          "color": "rgb(255, 255, 255)",
+          "display": "block",
+          "fontSize": "12px",
+          "fontWeight": "400"
+        },
+        "cssSelector": "div.grid.grid-cols-1 > div.lg\\:col-span-3.space-y-6 > div.flex.flex-col > div.flex.items-center > select.bg-black\\/60.border",
+        "geometry": {
+          "clickOffset": {
+            "x": 50.445621490478516,
+            "y": 13.698455810546875
+          },
+          "height": 32.89194869995117,
+          "relativeX": 0.10258825978925151,
+          "relativeY": 0.0566359583864507,
+          "width": 141.5077667236328,
+          "x": 40.554378509521484,
+          "y": 414.0360107421875
+        },
+        "outerHtml": "<select class=\"bg-black/60 border border-white/15 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-[var(--accent-gold)] transition-colors cursor-pointer\"><option value=\"newest\">جدیدترین محصولات</option><option value=\"price-asc\">ارزان‌ترین قیمت</option><option value=\"price-de",
+        "stableId": null,
+        "tagName": "select",
+        "testId": null,
+        "textQuote": {
+          "exact": "جدیدترین محصولات\nارزان‌ترین قیمت\nگران‌ترین قیمت",
+          "prefix": "",
+          "suffix": ""
+        },
+        "xpath": "/html[1]/body[1]/div[2]/main[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/select[1]"
+      },
+      "createdAt": 1788857416061,
+      "id": "vcp_pin_1788857416061_jc4x",
+      "index": 1,
+      "normalizedPath": "/shop",
+      "prompt": "dropdown list should be in flow with colour and ui of website",
+      "url": "https://siam-nu.vercel.app/shop"
+    }
+  ],
+  "timestamp": 1788857428708
+}

@@ -204,13 +204,63 @@ const server = http.createServer(async (req, res) => {
 
       console.log(`[VCP Bridge] Successfully written task for ${payload.pins.length} pins to ${mdFilePath}`);
 
+      let agentTriggered = false;
+      let agentLogFile = null;
+
+      // Auto-trigger Antigravity Agent autonomously via `agy` CLI
+      if (payload.autoTrigger) {
+        try {
+          const { spawn } = require('child_process');
+          const agyLogName = `agent-run-${fileTimestamp}.log`;
+          agentLogFile = path.join(tasksDir, agyLogName);
+          const logStream = fs.createWriteStream(agentLogFile, { flags: 'a' });
+
+          const promptDirective = `Please read the visual feedback tasks in ${mdFilePath} (and FEEDBACK_PROMPT.md) and implement all requested modifications in this codebase. Maintain clean code and verify your changes.`;
+
+          console.log(`[VCP Bridge] 🤖 Auto-triggering Antigravity CLI (agy) in: ${targetPath}`);
+
+          const child = spawn('agy', ['-p', promptDirective, '--dangerously-skip-permissions'], {
+            cwd: targetPath,
+            detached: true,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            shell: true
+          });
+
+          child.stdout.pipe(logStream);
+          child.stderr.pipe(logStream);
+
+          child.on('error', (err) => {
+            console.error('[VCP Agent Spawn Error]', err);
+          });
+
+          child.on('close', (code) => {
+            console.log(`[VCP Agent] Autonomous run finished with exit code ${code}`);
+          });
+
+          child.unref();
+          agentTriggered = true;
+        } catch (spawnErr) {
+          console.error('[VCP Bridge] Failed to auto-trigger agy:', spawnErr);
+        }
+      }
+
       return sendJson(res, 200, {
         success: true,
         savedFile: mdFilePath,
         relativeTask: path.join('.gemini', 'tasks', mdFileName),
         rootPrompt: rootPromptPath,
         taskCount: payload.pins.length,
-        timestamp: fileTimestamp
+        timestamp: fileTimestamp,
+        agentTriggered,
+        agentLogFile
+      });
+    }
+
+    // GET /api/agent-status
+    if (req.method === 'GET' && pathname === '/api/agent-status') {
+      return sendJson(res, 200, {
+        status: 'ok',
+        agyAvailable: true
       });
     }
 
@@ -222,13 +272,15 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`====================================================`);
-  console.log(`🚀 VCP Antigravity Bridge Daemon running`);
-  console.log(`📍 URL: http://${HOST}:${PORT}`);
-  console.log(`📁 Active Workspace: ${activeProject}`);
-  console.log(`====================================================`);
-});
+if (require.main === module) {
+  server.listen(PORT, HOST, () => {
+    console.log(`====================================================`);
+    console.log(`🚀 VCP Antigravity Bridge Daemon running`);
+    console.log(`📍 URL: http://${HOST}:${PORT}`);
+    console.log(`📁 Active Workspace: ${activeProject}`);
+    console.log(`====================================================`);
+  });
+}
 
 // Handle graceful termination
 process.on('SIGINT', () => {

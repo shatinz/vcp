@@ -155,5 +155,7 @@ async function runTests() {
   }
 }
 
-// Allow server a moment to bind then run tests
-setTimeout(runTests, 200);
+// Start server and run tests
+server.listen(TEST_PORT, TEST_HOST, () => {
+  runTests();
+});

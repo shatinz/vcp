@@ -69,8 +69,29 @@ The bridge runs at `http://127.0.0.1:8765`.
   2. `<target_project>/.gemini/tasks/task-<timestamp>.md` (timestamped task document)
   3. `<target_project>/.gemini/tasks/feedback-<timestamp>.json` (machine-readable data)
   4. Appends task summary to `<target_project>/agent_inbox.md`
-* You can now tell Antigravity:
-  > *"Check FEEDBACK_PROMPT.md and implement the requested changes."*
+
+---
+
+## 🤖 How to Trigger the Agent to Implement the Changes
+
+You have **3 flexible ways** to trigger Antigravity:
+
+### Method 1: Autonomous Auto-Trigger (Zero-Click Execution)
+* Check the **"🤖 Auto-trigger Agent"** checkbox in the VCP extension popup.
+* When you click **⚡ Send to Antigravity**, the bridge daemon automatically spawns the **Antigravity CLI (`agy`)** in the background with `--dangerously-skip-permissions` targeting that project directory.
+* The agent reads `FEEDBACK_PROMPT.md`, locates your components, implements the requested changes, and writes execution logs to `.gemini/tasks/agent-run-<timestamp>.log` — **completely hands-free without opening any chat!**
+
+### Method 2: In-Session Watcher (Continuous Pair Programming)
+* If you have an active chat session with Antigravity (in the IDE or desktop app), simply say:
+  > *"Antigravity, start watching for visual feedback prompts."*
+* Antigravity will monitor `FEEDBACK_PROMPT.md` and `.gemini/tasks/`. Every time you save pins on your live website, Antigravity wakes up automatically, implements the changes, and presents the diffs right in the conversation.
+
+### Method 3: Direct Prompt / 1-Click Interactive Trigger
+* In your Antigravity chat window, simply prompt:
+  > `Implement FEEDBACK_PROMPT.md`
+  or
+  > `/goal Implement the visual tasks in FEEDBACK_PROMPT.md`
+* Antigravity will load the exact selectors, computed styles, text quotes, and instructions, and apply the code edits step-by-step.
 
 ---
 

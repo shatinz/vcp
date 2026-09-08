@@ -254,6 +254,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     showToast('Page pins cleared', 'success');
   });
 
+  const autoTriggerCheckbox = document.getElementById('auto-trigger-checkbox');
+
+  // Load auto-trigger setting
+  chrome.storage.local.get(['vcp_auto_trigger'], (res) => {
+    if (autoTriggerCheckbox) {
+      autoTriggerCheckbox.checked = res.vcp_auto_trigger !== false;
+    }
+  });
+
+  if (autoTriggerCheckbox) {
+    autoTriggerCheckbox.addEventListener('change', () => {
+      chrome.storage.local.set({ vcp_auto_trigger: autoTriggerCheckbox.checked });
+    });
+  }
+
   // 6. Send to Antigravity
   sendAgentBtn.addEventListener('click', async () => {
     const pinsToSend = activeFilter === 'all' ? allWebsitePins : currentPagePins;
@@ -265,9 +280,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const targetProject = projectInput.value.trim() || 'C:\\prj\\vcp';
     const macro = macroPrompt.value.trim();
+    const autoTrigger = autoTriggerCheckbox ? autoTriggerCheckbox.checked : false;
 
     sendAgentBtn.disabled = true;
-    sendAgentBtn.innerHTML = `<span>⏳ Sending to Agent...</span>`;
+    sendAgentBtn.innerHTML = `<span>⏳ ${autoTrigger ? 'Triggering Agent...' : 'Sending to Bridge...'}</span>`;
 
     const payload = {
       projectPath: targetProject,
@@ -276,6 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       normalizedPath: activePath,
       filterMode: activeFilter,
       macroPrompt: macro,
+      autoTrigger: autoTrigger,
       pins: pinsToSend,
       timestamp: Date.now()
     };
@@ -288,7 +305,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       sendAgentBtn.innerHTML = `<span>⚡ Send to Antigravity</span>`;
 
       if (response && response.success) {
-        showToast(`✓ Prompts written to ${response.data.savedFile || 'Antigravity workspace'}!`, 'success');
+        if (response.data?.agentTriggered) {
+          showToast(`✓ Prompts written & Agent Auto-Triggered via agy!`, 'success');
+        } else {
+          showToast(`✓ Prompts written to ${response.data.savedFile || 'Antigravity workspace'}!`, 'success');
+        }
         macroPrompt.value = '';
       } else {
         const err = response?.error || 'Bridge server not reachable';
