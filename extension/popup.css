@@ -119,6 +119,27 @@ body {
   background: var(--danger);
 }
 
+.btn-bridge-start {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 8px rgba(22, 163, 74, 0.4);
+  transition: all 0.15s ease;
+}
+
+.btn-bridge-start:hover {
+  background: #15803d;
+  transform: scale(1.05);
+}
+
 /* Sections */
 .section {
   display: flex;

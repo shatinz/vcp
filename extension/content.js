@@ -1104,13 +1104,35 @@
             resultBanner.style.color = '#92400e';
             resultBanner.innerHTML = `
               <div><strong>⚠️ Bridge offline, but task brief copied to clipboard!</strong></div>
-              <div style="font-size: 10px; margin-top: 2px;">Paste directly into Antigravity chat to execute.</div>
+              <div style="font-size: 10px; margin-top: 2px;">Paste directly into Antigravity chat or start bridge below.</div>
+              <div style="margin-top: 6px;"><button id="vcp-modal-start-bridge" class="vcp-btn vcp-btn-primary" style="padding: 4px 10px; font-size: 11px; background: #16a34a;">▶️ Start Bridge Daemon</button></div>
             `;
+            const startBtn = resultBanner.querySelector('#vcp-modal-start-bridge');
+            if (startBtn) {
+              startBtn.addEventListener('click', () => {
+                window.location.href = 'vcp://start';
+                startBtn.textContent = 'Starting...';
+                startBtn.disabled = true;
+                setTimeout(() => sendBtn.click(), 1500);
+              });
+            }
           }).catch(() => {
             resultBanner.style.display = 'block';
             resultBanner.style.background = '#fee2e2';
             resultBanner.style.color = '#991b1b';
-            resultBanner.innerHTML = `<div>Bridge offline. Run <code>start-bridge.bat</code> in C:\\prj\\vcp</div>`;
+            resultBanner.innerHTML = `
+              <div>Bridge offline. Run <code>start-bridge.bat</code> in C:\\prj\\vcp</div>
+              <div style="margin-top: 6px;"><button id="vcp-modal-start-bridge" class="vcp-btn vcp-btn-primary" style="padding: 4px 10px; font-size: 11px; background: #16a34a;">▶️ Start Bridge Daemon</button></div>
+            `;
+            const startBtn = resultBanner.querySelector('#vcp-modal-start-bridge');
+            if (startBtn) {
+              startBtn.addEventListener('click', () => {
+                window.location.href = 'vcp://start';
+                startBtn.textContent = 'Starting...';
+                startBtn.disabled = true;
+                setTimeout(() => sendBtn.click(), 1500);
+              });
+            }
           });
         }
       });

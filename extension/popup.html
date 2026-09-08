@@ -17,9 +17,14 @@
         </div>
         <span class="version-tag">v1.0</span>
       </div>
-      <div class="server-status" id="server-status-pill" title="Local Bridge Status">
-        <span class="status-indicator"></span>
-        <span class="status-text">Checking...</span>
+      <div class="header-right" style="display: flex; align-items: center; gap: 6px;">
+        <div class="server-status" id="server-status-pill" title="Local Bridge Status">
+          <span class="status-indicator"></span>
+          <span class="status-text">Checking...</span>
+        </div>
+        <button id="start-bridge-btn" class="btn-bridge-start" title="Launch local bridge daemon (start-bridge.bat)" style="display: none;">
+          ▶️ Start
+        </button>
       </div>
     </header>
 

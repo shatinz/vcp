@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  const startBridgeBtn = document.getElementById('start-bridge-btn');
+
   // 2. Check Local Bridge Health
   async function checkBridgeHealth() {
     chrome.runtime.sendMessage({ action: 'CHECK_BRIDGE_HEALTH' }, (response) => {
@@ -61,11 +63,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         serverStatusPill.className = 'server-status online';
         serverStatusPill.querySelector('.status-text').textContent = 'Bridge Online';
         serverStatusPill.title = `Bridge running at 127.0.0.1:8765. Active Project: ${response.data.activeProject || 'Default'}`;
+        if (startBridgeBtn) startBridgeBtn.style.display = 'none';
       } else {
         serverStatusPill.className = 'server-status offline';
         serverStatusPill.querySelector('.status-text').textContent = 'Bridge Offline';
-        serverStatusPill.title = 'Run start-bridge.bat to activate local Antigravity bridge';
+        serverStatusPill.title = 'Click Start or run start-bridge.bat to activate local Antigravity bridge';
+        if (startBridgeBtn) {
+          startBridgeBtn.style.display = 'inline-flex';
+          startBridgeBtn.disabled = false;
+          startBridgeBtn.textContent = '▶️ Start';
+        }
       }
+    });
+  }
+
+  if (startBridgeBtn) {
+    startBridgeBtn.addEventListener('click', () => {
+      startBridgeBtn.disabled = true;
+      startBridgeBtn.textContent = 'Starting...';
+      showToast('Launching bridge daemon via vcp:// protocol...', 'warning');
+
+      // Trigger custom protocol registered in Windows registry
+      window.location.href = 'vcp://start';
+
+      // Poll until online
+      let attempts = 0;
+      const poll = setInterval(() => {
+        attempts++;
+        chrome.runtime.sendMessage({ action: 'CHECK_BRIDGE_HEALTH' }, (res) => {
+          if (res && res.success) {
+            clearInterval(poll);
+            checkBridgeHealth();
+            showToast('✓ Bridge is now Online!', 'success');
+          } else if (attempts >= 6) {
+            clearInterval(poll);
+            checkBridgeHealth();
+          }
+        });
+      }, 1000);
     });
   }
 
