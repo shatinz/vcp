@@ -148,11 +148,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 5. Load & Render Pins
   async function loadPins() {
-    if (!activeOrigin) return;
-    const storageKey = `vcp_pins_${activeOrigin}`;
-    const data = await chrome.storage.local.get([storageKey]);
-    allWebsitePins = data[storageKey] || [];
-    currentPagePins = allWebsitePins.filter(p => p.normalizedPath === activePath);
+    // 1. Try to query active tab directly first
+    if (activeTab && activeTab.id) {
+      try {
+        const res = await chrome.tabs.sendMessage(activeTab.id, { action: 'GET_ALL_PINS' });
+        if (res && Array.isArray(res.pins)) {
+          currentPagePins = res.pins;
+        }
+      } catch (e) { }
+    }
+
+    // 2. Also load from storage
+    if (activeOrigin) {
+      const storageKey = `vcp_pins_${activeOrigin}`;
+      const data = await chrome.storage.local.get([storageKey]);
+      allWebsitePins = data[storageKey] || [];
+      if (currentPagePins.length === 0) {
+        currentPagePins = allWebsitePins.filter(p => p.normalizedPath === activePath);
+      }
+    }
 
     countCurrent.textContent = currentPagePins.length;
     countAll.textContent = allWebsitePins.length;
@@ -313,10 +327,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         macroPrompt.value = '';
       } else {
         const err = response?.error || 'Bridge server not reachable';
-        showToast(`Bridge error: ${err}. Run start-bridge.bat!`, 'error');
+        const mdText = generateMarkdownForClipboard(pinsToSend, macro, activeUrl);
+        navigator.clipboard.writeText(mdText).then(() => {
+          showToast(`⚠️ Bridge offline, but task brief copied to clipboard for Antigravity!`, 'warning');
+        }).catch(() => {
+          showToast(`Bridge offline (${err}). Run start-bridge.bat!`, 'error');
+        });
       }
     });
   });
+
+  function generateMarkdownForClipboard(pins, macro, url) {
+    let md = `# 🎯 Visual Feedback for ${url}\n\n`;
+    if (macro) md += `> **Directive:** ${macro}\n\n`;
+    pins.forEach(p => {
+      md += `### Pin #${p.index} <${p.anchor?.tagName || 'element'}>\n`;
+      md += `- **Prompt:** ${p.prompt}\n`;
+      md += `- **Selector:** \`${p.anchor?.cssSelector || p.anchor?.xpath || 'unknown'}\`\n`;
+      if (p.anchor?.textQuote?.exact) md += `- **Text:** "${p.anchor.textQuote.exact}"\n`;
+      md += `\n`;
+    });
+    return md;
+  }
 
   function showToast(message, type = 'success') {
     toastBanner.className = `toast-banner ${type}`;

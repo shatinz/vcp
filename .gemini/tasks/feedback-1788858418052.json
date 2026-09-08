@@ -1,0 +1,18 @@
+{
+  "projectPath": "C:\\\\prj\\\\vcp",
+  "url": "https://example.com/test",
+  "pins": [
+    {
+      "index": 1,
+      "prompt": "Make header bold and center it",
+      "anchor": {
+        "tagName": "h1",
+        "cssSelector": "h1.title",
+        "geometry": {
+          "docX": 100,
+          "docY": 100
+        }
+      }
+    }
+  ]
+}
