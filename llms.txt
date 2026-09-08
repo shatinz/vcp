@@ -1,0 +1,20 @@
+# Visual Click Prompt (VCP)
+
+> Interactive visual in-context prompting Chrome extension for live websites with multi-page persistent pins and direct bridge to Antigravity AI agents.
+
+## Core Capabilities
+- Point and click on any web element to trigger a floating in-context prompt popover right at the clicked coordinate.
+- Zero host page styling interference via open Shadow Root (<vcp-feedback-root>) with all: initial resets and CSP-safe inlined CSS.
+- Persistent numbered glowing dots remaining at clicked spots, glued to elements across scrolling and window resizing.
+- Multi-page persistence: Pins stored in chrome.storage.local partitioned by domain and normalized route, surviving SPA client-side navigations.
+- Resilient multi-tier DOM anchoring: test-ids, sanitized CSS selectors, W3C text quotes, structural XPath, and geometric ratios.
+- Local bridge daemon on 127.0.0.1:8765 writes structured Markdown briefs to FEEDBACK_PROMPT.md and .gemini/tasks/ in target project workspaces.
+- Autonomous agent auto-triggering via Antigravity CLI (agy).
+- 1-click Windows protocol launch via vcp://start.
+
+## Project Structure
+- extension/: Chrome Extension Manifest V3 source code (content.js, background.js, popup.html, popup.js, popup.css).
+- bridge/: Local HTTP bridge server (server.js, package.json, test-bridge.js).
+- start-bridge.bat: 1-click Windows launcher.
+- register-protocol.bat: Windows URL protocol registration for vcp://start.
+- FEEDBACK_PROMPT.md: Primary active task brief in any workspace.
