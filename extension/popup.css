@@ -628,6 +628,30 @@ body {
   color: var(--text-muted);
 }
 
+.btn-confirm-delete {
+  background: rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.6) !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  animation: vcp-pulse-red 0.8s infinite alternate ease-in-out;
+}
+
+@keyframes vcp-pulse-red {
+  0% {
+    box-shadow: 0 0 2px rgba(239, 68, 68, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+  }
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Toast Banner */
 .toast-banner {
   display: none;

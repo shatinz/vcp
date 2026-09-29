@@ -1236,11 +1236,16 @@
 
         <textarea class="vcp-textarea" id="vcp-modal-macro" style="height: 50px;" placeholder="Optional overarching instructions for Antigravity..."></textarea>
       </div>
-      <div class="vcp-popover-footer">
-        <button class="vcp-btn vcp-btn-ghost" id="vcp-modal-cancel">Close</button>
-        <button class="vcp-btn vcp-btn-primary" id="vcp-modal-send" ${pagePins.length === 0 ? 'disabled' : ''}>
-          <span>⚡ Send to Agent</span>
+      <div class="vcp-popover-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="vcp-btn vcp-btn-danger" id="vcp-modal-clear" ${pagePins.length === 0 ? 'disabled' : ''} style="font-size: 11px; padding: 5px 8px;">
+          🗑️ Clear Pins
         </button>
+        <div style="display: flex; gap: 6px;">
+          <button class="vcp-btn vcp-btn-ghost" id="vcp-modal-cancel">Close</button>
+          <button class="vcp-btn vcp-btn-primary" id="vcp-modal-send" ${pagePins.length === 0 ? 'disabled' : ''}>
+            <span>⚡ Send to Agent</span>
+          </button>
+        </div>
       </div>
       <div id="vcp-modal-result" style="display: none; padding: 8px 12px; font-size: 11px; text-align: center;"></div>
     `;
@@ -1250,6 +1255,14 @@
 
     modal.querySelector('#vcp-modal-close').addEventListener('click', closeModal);
     modal.querySelector('#vcp-modal-cancel').addEventListener('click', closeModal);
+
+    const clearBtn = modal.querySelector('#vcp-modal-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', async () => {
+        await clearPagePins();
+        closeModal();
+      });
+    }
 
     const projectInput = modal.querySelector('#vcp-modal-project');
     const autoTriggerCheck = modal.querySelector('#vcp-modal-autotrigger');
@@ -1397,6 +1410,54 @@
     }
   }
 
+  async function clearPagePins() {
+    pagePins = [];
+    if (pinsContainer) pinsContainer.innerHTML = '';
+    renderPinDots();
+    updateHudCounter();
+    if (activePopover) closePopover();
+    if (activeModal) closeModal();
+    await savePinsToStorage();
+    chrome.runtime.sendMessage({
+      action: 'UPDATE_BADGE',
+      count: 0
+    });
+    showInPageToast('🗑️ All pins on this page deleted');
+  }
+
+  async function clearAllWebsitePins() {
+    pagePins = [];
+    if (pinsContainer) pinsContainer.innerHTML = '';
+    renderPinDots();
+    updateHudCounter();
+    if (activePopover) closePopover();
+    if (activeModal) closeModal();
+    const norm = normalizeUrl(window.location.href);
+    const storageKey = `vcp_pins_${norm.origin}`;
+    try {
+      await chrome.storage.local.remove([storageKey]);
+    } catch (e) { }
+    chrome.runtime.sendMessage({
+      action: 'UPDATE_BADGE',
+      count: 0
+    });
+    showInPageToast('🗑️ All website pins deleted');
+  }
+
+  async function deletePinById(pinId) {
+    pagePins = pagePins.filter(p => p.id !== pinId);
+    pagePins.forEach((p, idx) => p.index = idx + 1);
+    if (pinsContainer) pinsContainer.innerHTML = '';
+    renderPinDots();
+    updateHudCounter();
+    if (activePopover) closePopover();
+    await savePinsToStorage();
+    chrome.runtime.sendMessage({
+      action: 'UPDATE_BADGE',
+      count: pagePins.length
+    });
+  }
+
   // --- SPA Routing ---
   function onRouteChanged(newUrl) {
     if (newUrl === lastUrl) return;
@@ -1467,6 +1528,18 @@
     } else if (msg.action === 'ROUTE_CHANGED') {
       onRouteChanged(msg.url);
       sendResponse({ success: true });
+    } else if (msg.action === 'CLEAR_PAGE_PINS') {
+      clearPagePins();
+      sendResponse({ success: true });
+    } else if (msg.action === 'CLEAR_ALL_PINS') {
+      clearAllWebsitePins();
+      sendResponse({ success: true });
+    } else if (msg.action === 'DELETE_PIN') {
+      deletePinById(msg.pinId);
+      sendResponse({ success: true });
+    } else if (msg.action === 'RELOAD_PINS') {
+      loadPinsFromStorage();
+      sendResponse({ success: true });
     } else if (msg.action === 'FOCUS_PIN') {
       const pin = pagePins.find(p => p.id === msg.pinId);
       if (pin) {
@@ -1501,6 +1574,11 @@
     // Listen to storage changes across tabs
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local') {
+        const norm = normalizeUrl(window.location.href);
+        const storageKey = `vcp_pins_${norm.origin}`;
+        if (storageKey in changes) {
+          loadPinsFromStorage();
+        }
         if ('vcp_enabled' in changes) {
           isVcpEnabled = changes.vcp_enabled.newValue !== false;
           applyVcpEnabledState();

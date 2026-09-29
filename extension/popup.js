@@ -287,6 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span>Click "Turn ON Pin Mode" and click any element to capture prompts!</span>
         </div>
       `;
+      updateClearPinsButton();
       return;
     }
 
@@ -310,7 +311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           chrome.tabs.sendMessage(activeTab.id, {
             action: 'FOCUS_PIN',
             pinId: pin.id
-          });
+          }).catch(() => {});
         }
       });
 
@@ -320,6 +321,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       pinsList.appendChild(item);
     });
+
+    updateClearPinsButton();
   }
 
   async function deletePin(pinId) {
@@ -330,12 +333,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentPagePins.forEach((p, idx) => p.index = idx + 1);
 
     await chrome.storage.local.set({ [storageKey]: allWebsitePins });
-    await loadPins();
 
-    // Notify tab to update pins
+    // Notify tab to update pins directly
     if (activeTab && activeTab.id) {
-      chrome.tabs.sendMessage(activeTab.id, { action: 'ROUTE_CHANGED', url: activeUrl });
+      chrome.tabs.sendMessage(activeTab.id, { action: 'DELETE_PIN', pinId }).catch(() => {});
     }
+
+    await loadPins();
+    showToast('✓ Pin deleted', 'success');
+  }
+
+  // 2-Step Confirmation for Clear Pins (No unreliable window.confirm in extension popups!)
+  let clearConfirmPending = false;
+  let clearConfirmTimeout = null;
+
+  function updateClearPinsButton() {
+    if (!clearPinsBtn) return;
+    if (clearConfirmPending) {
+      clearPinsBtn.textContent = '⚠️ Confirm Delete?';
+      clearPinsBtn.classList.add('btn-confirm-delete');
+      clearPinsBtn.disabled = false;
+      return;
+    }
+
+    clearPinsBtn.classList.remove('btn-confirm-delete');
+    if (activeFilter === 'current') {
+      const count = currentPagePins.length;
+      clearPinsBtn.textContent = `Clear Page Pins (${count})`;
+      clearPinsBtn.disabled = count === 0;
+      clearPinsBtn.title = count === 0 ? 'No pins on this page to clear' : 'Delete all pins on this page';
+    } else {
+      const count = allWebsitePins.length;
+      clearPinsBtn.textContent = `Delete All Pins (${count})`;
+      clearPinsBtn.disabled = count === 0;
+      clearPinsBtn.title = count === 0 ? 'No website pins to clear' : 'Delete all pins across this entire website';
+    }
+  }
+
+  function resetClearConfirm() {
+    clearConfirmPending = false;
+    if (clearConfirmTimeout) {
+      clearTimeout(clearConfirmTimeout);
+      clearConfirmTimeout = null;
+    }
+    updateClearPinsButton();
   }
 
   // Tabs Switching
@@ -343,6 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeFilter = 'current';
     tabCurrent.classList.add('active');
     tabAll.classList.remove('active');
+    resetClearConfirm();
     renderPinsList();
   });
 
@@ -350,23 +392,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeFilter = 'all';
     tabAll.classList.add('active');
     tabCurrent.classList.remove('active');
+    resetClearConfirm();
     renderPinsList();
   });
 
-  // Clear Pins
+  // Clear Pins Handler with 2-Step Inline Confirmation
   clearPinsBtn.addEventListener('click', async () => {
-    if (currentPagePins.length === 0) return;
-    if (!confirm(`Delete all ${currentPagePins.length} pins on this page?`)) return;
+    const isCurrent = activeFilter === 'current';
+    const targetCount = isCurrent ? currentPagePins.length : allWebsitePins.length;
 
-    const storageKey = `vcp_pins_${activeOrigin}`;
-    allWebsitePins = allWebsitePins.filter(p => p.normalizedPath !== activePath);
-    await chrome.storage.local.set({ [storageKey]: allWebsitePins });
-    await loadPins();
+    if (targetCount === 0) return;
 
-    if (activeTab && activeTab.id) {
-      chrome.tabs.sendMessage(activeTab.id, { action: 'ROUTE_CHANGED', url: activeUrl });
+    if (!clearConfirmPending) {
+      clearConfirmPending = true;
+      updateClearPinsButton();
+      clearConfirmTimeout = setTimeout(() => {
+        resetClearConfirm();
+      }, 3500);
+      return;
     }
-    showToast('Page pins cleared', 'success');
+
+    // Confirmed! Execute deletion
+    resetClearConfirm();
+    const storageKey = `vcp_pins_${activeOrigin}`;
+
+    if (isCurrent) {
+      allWebsitePins = allWebsitePins.filter(p => p.normalizedPath !== activePath);
+      currentPagePins = [];
+      await chrome.storage.local.set({ [storageKey]: allWebsitePins });
+
+      if (activeTab && activeTab.id) {
+        chrome.tabs.sendMessage(activeTab.id, { action: 'CLEAR_PAGE_PINS' }).catch(() => {});
+      }
+      showToast(`✓ Cleared ${targetCount} page pins`, 'success');
+    } else {
+      allWebsitePins = [];
+      currentPagePins = [];
+      await chrome.storage.local.remove([storageKey]);
+
+      if (activeTab && activeTab.id) {
+        chrome.tabs.sendMessage(activeTab.id, { action: 'CLEAR_ALL_PINS' }).catch(() => {});
+      }
+      showToast(`✓ Deleted all ${targetCount} website pins`, 'success');
+    }
+
+    await loadPins();
   });
 
   const autoTriggerCheckbox = document.getElementById('auto-trigger-checkbox');
