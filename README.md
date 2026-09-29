@@ -70,6 +70,9 @@ Point & Click on Element ➔ Type Prompt in Floating Popover ➔ Browse Pages (P
 
 ## Key Features
 
+- **⚡ Master ON / OFF Power Switch & Dormant Engine**: Complete control over when VCP is listening. Toggle VCP globally from the popup or directly on any webpage using the in-page HUD power button (`⏻`). When OFF, VCP stays 100% dormant with zero DOM modifications, zero click interception, and zero performance impact on pages.
+- **🛡️ Safe Non-Destructive Defaults**: Pin Mode is OFF by default on page load. Normal web browsing, links, forms, and buttons operate 100% natively without accidental click trapping until you toggle Pin Mode ON (`Alt+Shift+V`).
+- **🪟 In-Page Floating HUD Dock & Minimized Orb**: Floating dark glass HUD dock with 1-click Pin Mode toggle, pin counter, Antigravity send trigger, minimize button (`—`), and power button (`⏻`). Minimizes into a discreet, glowing circular orb in the corner.
 - **Isolated Shadow DOM Overlay (`<vcp-feedback-root>`)**: Mounts directly to `document.documentElement` with `all: initial` isolation. Host site styles cannot warp extension controls, and extension styles never leak into the host page.
 - **CSP-Proof Inlined Stylesheet**: Bypasses strict Content Security Policies (`connect-src`, `style-src`) that break external CSS fetches on enterprise or banking websites.
 - **Precision In-Context Popover**: Floats directly at the clicked coordinates `(clientX, clientY)` with automatic viewport boundary flipping (`top`/`bottom`, `left`/`right`) so it never clips off-screen.
@@ -85,23 +88,28 @@ Point & Click on Element ➔ Type Prompt in Floating Popover ➔ Browse Pages (P
 - **Autonomous Agent Auto-Triggering**: Built-in support for the Antigravity CLI (`agy`). When enabled, the bridge server automatically launches headless agent execution with `--dangerously-skip-permissions` to implement changes hands-free.
 - **1-Click Bridge Protocol (`vcp://start`)**: Click **▶️ Start Bridge** directly inside the extension popup or in-page modal to launch the local bridge daemon via native Windows URL protocol registration.
 - **Fail-Safe Clipboard Fallback**: If the bridge daemon is ever offline, clicking Send automatically copies the complete Markdown task brief to your clipboard so you can paste it directly into Antigravity chat.
+- **🛒 100% Free Store Distribution**: Zero $5 Google fee required! Clean packages built for Microsoft Edge Add-ons ($0 Free), Mozilla Firefox AMO ($0 Free), and Opera Add-ons ($0 Free) via `package-stores.bat`.
 
 ---
 
 ## Quickstart
 
-### 1. Install the Chrome Extension
-1. Clone or download this repository:
-   ```bash
-   git clone https://github.com/shatinz/vcp.git C:\prj\vcp
-   ```
-2. Open Google Chrome and navigate to `chrome://extensions`.
-3. Enable **Developer mode** using the toggle switch in the top-right corner.
-4. Click **Load unpacked** and select the `extension` directory:
-   ```text
-   C:\prj\vcp\extension
-   ```
+### 1. Install to Google Chrome (10-Second Setup)
+
+**Option A: 1-Click Automated Installer (Windows)**
+- Double-click **`add-to-chrome.bat`** in the repository root.
+- The script automatically copies the extension folder path to your clipboard and opens `chrome://extensions`.
+- In Chrome: Turn on **Developer mode** (top-right) → Click **Load unpacked** (top-left) → Press <kbd>Ctrl</kbd> + <kbd>V</kbd> → Click **Select Folder**. Done!
+- *(See [ADD_TO_CHROME.md](ADD_TO_CHROME.md) for full walkthrough and screenshots).*
+
+**Option B: Manual Install (Mac / Linux)**
+1. Clone or download this repository.
+2. Open Chrome and go to `chrome://extensions`.
+3. Enable **Developer mode** (top-right).
+4. Click **Load unpacked** and choose `C:\prj\vcp\extension`.
 5. Pin **Visual Click Prompt (VCP)** to your Chrome toolbar.
+
+---
 
 ### 2. Start the Local Bridge Daemon
 The bridge daemon receives feedback payloads from the extension and writes structured task briefs directly into your local project workspace.
@@ -273,6 +281,24 @@ Modern web applications use aggressive CSS resets, CSS Modules, or global styles
 
 ### What happens if the bridge server is offline when I click Send?
 VCP has an automatic **Fail-Safe Clipboard Fallback**. If the bridge cannot be reached, the complete formatted Markdown prompt brief is instantly copied to your system clipboard, allowing you to paste it directly into your Antigravity chat window with zero lost work.
+
+---
+
+## 🛒 Publishing & Store Distribution (100% Free Stores)
+
+You do **not** need to pay Google's $5 developer registration fee to publish and distribute VCP! 
+
+Run the automated packager to generate clean bundles for all major stores:
+```bash
+.\package-stores.bat
+```
+This builds ready-to-upload ZIP archives in `dist/`:
+- **Microsoft Edge Add-ons (100% FREE):** `dist/vcp-edge-extension.zip` — [Edge Partner Center](https://partner.microsoft.com/dashboard/microsoftedge) *(Edge + Chrome users can install)*
+- **Mozilla Firefox Add-ons AMO (100% FREE):** `dist/vcp-firefox-extension.zip` — [AMO Developer Hub](https://addons.mozilla.org/developers/)
+- **Opera Add-ons (100% FREE):** `dist/vcp-opera-extension.zip` — [Opera Add-ons Portal](https://addons.opera.com/developer/)
+- **Google Chrome Web Store:** `dist/vcp-chrome-extension.zip` — [Chrome Dev Console](https://chrome.google.com/webstore/devconsole)
+
+👉 **For step-by-step submission guides and copy-paste store listing descriptions, see [FREE_STORES_PUBLISHING.md](FREE_STORES_PUBLISHING.md).**
 
 ---
 

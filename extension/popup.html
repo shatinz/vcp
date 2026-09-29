@@ -28,6 +28,24 @@
       </div>
     </header>
 
+    <!-- Master ON / OFF Power Switch -->
+    <section class="master-power-card" id="master-power-card">
+      <div class="power-left">
+        <div class="power-status-indicator" id="power-dot"></div>
+        <div class="power-text">
+          <div class="power-title-row">
+            <span class="power-heading">VCP Engine</span>
+            <span class="power-badge" id="power-badge">ON</span>
+          </div>
+          <span class="power-subtext" id="power-subtext">Visual click prompting active</span>
+        </div>
+      </div>
+      <label class="toggle-switch" title="Master ON/OFF Switch: Enable or disable VCP completely">
+        <input type="checkbox" id="master-power-switch" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </section>
+
     <!-- Project Workspace Selector -->
     <section class="section project-section">
       <label class="section-label" for="project-input">Target Antigravity Project</label>

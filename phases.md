@@ -151,3 +151,44 @@ All tests pass, repository is fully committed, and documentation is crystal-clea
 **Phase 7 Exit Criteria:**
 Clean Web Store zip generated, privacy policy published, upstream Antigravity skills PR submitted, and all submission guides compiled. *(PASSED)*
 
+---
+
+## Phase 8: Master On/Off Power Switch, 1-Click Chrome Installer & Free Stores Distribution
+**Boundary Lines:**
+- **In Scope:**
+  - Master ON/OFF power toggle in extension popup with persistent `chrome.storage.local` state.
+  - In-Page floating HUD power button (`⏻`), minimize/expand orb (`_`), and non-intrusive dormant mode.
+  - Safe default: Pin Mode is OFF on page load (`isInspectMode = false`) to guarantee zero interference with regular web browsing.
+  - Dynamic extension toolbar badge states (`OFF` indicator when disabled vs. pin count).
+  - 1-Click Chrome Setup Automation (`add-to-chrome.bat`, `run-chrome-with-vcp.bat`, clipboard auto-copy, and `ADD_TO_CHROME.md`).
+  - Multi-store free publishing packages (`package-all-stores.js`, `package-stores.bat`) building clean ZIPs for Microsoft Edge Add-ons (Free), Firefox AMO (Free), Opera Add-ons (Free), and Chrome.
+  - Comprehensive Free Stores Publisher Guide (`FREE_STORES_PUBLISHING.md`).
+  - End-to-end testing, documentation updates, and git sync.
+- **Out of Scope:** Native paid store ads.
+
+### Layers & Tasks:
+- [x] **Layer 8.1: Master On/Off Power Switch & Dormant Mode**
+  - [x] Implement master power switch in `popup.html` and `popup.css` with active/dormant status pills.
+  - [x] Connect popup master switch to `chrome.storage.local` (`vcp_enabled`) and broadcast to all tabs.
+  - [x] Add HUD power button (`⏻`) and minimize/expand orb in `content.js`.
+  - [x] Update `content.js` to ensure zero DOM overhead and zero click trapping when dormant (`!isVcpEnabled`).
+  - [x] Update background worker to display gray `OFF` badge when disabled.
+- [x] **Layer 8.2: 1-Click "Add to Chrome" Setup Automation**
+  - [x] Create `add-to-chrome.bat` with automated Chrome detection, clipboard copy, `chrome://extensions` launch, and Explorer highlight.
+  - [x] Create `run-chrome-with-vcp.bat` for instant testing with `--load-extension`.
+  - [x] Write `ADD_TO_CHROME.md` 5-second setup walkthrough with visual diagrams.
+- [x] **Layer 8.3: Multi-Store Free Packaging Engine**
+  - [x] Implement `package-all-stores.js` supporting Microsoft Edge, Firefox AMO (with `browser_specific_settings`), Opera, and Chrome.
+  - [x] Implement `package-stores.bat` 1-click batch builder.
+- [x] **Layer 8.4: Free Stores Publishing Master Guide**
+  - [x] Compile `FREE_STORES_PUBLISHING.md` detailing step-by-step submission to Microsoft Edge Partner Center ($0), Mozilla AMO ($0), Opera Add-ons ($0), and GitHub Releases.
+  - [x] Include complete copy-paste metadata, single-purpose justifications, and asset specs.
+- [x] **Layer 8.5: Verification, Skills Sync & Git Push**
+  - [x] Run syntax checks and verification suite.
+  - [x] Update `README.md` and sync `vcp` skill to `skills-and-rules` repository.
+  - [x] Run security check and commit/push all changes.
+
+**Phase 8 Exit Criteria:**
+Master On/Off button works seamlessly in popup and in-page HUD, 1-click Chrome installer script works out-of-the-box, packages for all free stores are generated in `dist/`, and comprehensive publishing guide is ready. *(PASSED)*
+
+

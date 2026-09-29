@@ -6,11 +6,20 @@
 const LOCAL_BRIDGE_URL = 'http://127.0.0.1:8765';
 
 // Keyboard shortcut command listener
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'toggle-inspect') {
+    const data = await chrome.storage.local.get(['vcp_enabled']);
+    const isEnabled = data.vcp_enabled !== false;
+    if (!isEnabled) {
+      await chrome.storage.local.set({ vcp_enabled: true });
+      await updateGlobalBadge(true);
+    }
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'TOGGLE_INSPECT_MODE' });
+        chrome.tabs.sendMessage(tabs[0].id, {
+          action: 'TOGGLE_INSPECT_MODE',
+          forceEnable: !isEnabled
+        });
       }
     });
   }
@@ -34,12 +43,34 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(async (details) => {
 async function setTabBadge(tabId, count) {
   if (!tabId) return;
   try {
+    const data = await chrome.storage.local.get(['vcp_enabled']);
+    if (data.vcp_enabled === false) {
+      await chrome.action.setBadgeText({ tabId, text: 'OFF' });
+      await chrome.action.setBadgeBackgroundColor({ tabId, color: '#64748b' });
+      return;
+    }
     const text = count > 0 ? String(count) : '';
     await chrome.action.setBadgeText({ tabId, text });
     await chrome.action.setBadgeBackgroundColor({ tabId, color: '#4f46e5' });
   } catch (err) {
     // Ignore tab errors
   }
+}
+
+// Update all tabs badge when master state changes
+async function updateGlobalBadge(enabled) {
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const t of tabs) {
+      if (!t.id) continue;
+      if (!enabled) {
+        await chrome.action.setBadgeText({ tabId: t.id, text: 'OFF' });
+        await chrome.action.setBadgeBackgroundColor({ tabId: t.id, color: '#64748b' });
+      } else {
+        await chrome.action.setBadgeText({ tabId: t.id, text: '' });
+      }
+    }
+  } catch (e) {}
 }
 
 // Inter-process message listener
@@ -50,6 +81,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (tabId) {
       setTabBadge(tabId, message.count);
     }
+    sendResponse({ success: true });
+    return true;
+  }
+
+  // Master power toggle message from popup
+  if (message.action === 'SET_VCP_ENABLED') {
+    updateGlobalBadge(message.enabled);
     sendResponse({ success: true });
     return true;
   }

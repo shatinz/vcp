@@ -7,6 +7,11 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // DOM Elements
   const serverStatusPill = document.getElementById('server-status-pill');
+  const masterPowerCard = document.getElementById('master-power-card');
+  const masterPowerSwitch = document.getElementById('master-power-switch');
+  const powerDot = document.getElementById('power-dot');
+  const powerBadge = document.getElementById('power-badge');
+  const powerSubtext = document.getElementById('power-subtext');
   const projectInput = document.getElementById('project-input');
   const projectSaveBtn = document.getElementById('project-save-btn');
   const recentProjectsList = document.getElementById('recent-projects-list');
@@ -23,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const toastBanner = document.getElementById('toast-banner');
 
   // Active State
+  let isVcpGloballyEnabled = true;
   let activeTab = null;
   let activeUrl = '';
   let activeOrigin = '';
@@ -153,6 +159,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   projectSaveBtn.addEventListener('click', () => {
     saveProject(projectInput.value);
   });
+
+  // 3b. Master ON / OFF Power Switch
+  async function loadMasterPowerState() {
+    const data = await chrome.storage.local.get(['vcp_enabled']);
+    isVcpGloballyEnabled = data.vcp_enabled !== false;
+    updateMasterPowerUI(isVcpGloballyEnabled);
+  }
+
+  function updateMasterPowerUI(enabled) {
+    if (!masterPowerSwitch) return;
+    masterPowerSwitch.checked = enabled;
+
+    if (enabled) {
+      if (masterPowerCard) masterPowerCard.classList.remove('disabled');
+      if (powerDot) powerDot.className = 'power-status-indicator';
+      if (powerBadge) {
+        powerBadge.className = 'power-badge';
+        powerBadge.textContent = 'ON';
+      }
+      if (powerSubtext) powerSubtext.textContent = 'Visual click prompting active';
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('vcp-dormant-dimmed'));
+      const footer = document.querySelector('.footer');
+      if (footer) footer.classList.remove('vcp-dormant-dimmed');
+    } else {
+      if (masterPowerCard) masterPowerCard.classList.add('disabled');
+      if (powerDot) powerDot.className = 'power-status-indicator disabled';
+      if (powerBadge) {
+        powerBadge.className = 'power-badge disabled';
+        powerBadge.textContent = 'OFF';
+      }
+      if (powerSubtext) powerSubtext.textContent = 'Dormant — zero overhead on pages';
+      document.querySelectorAll('.section').forEach(sec => sec.classList.add('vcp-dormant-dimmed'));
+      const footer = document.querySelector('.footer');
+      if (footer) footer.classList.add('vcp-dormant-dimmed');
+    }
+  }
+
+  if (masterPowerSwitch) {
+    masterPowerSwitch.addEventListener('change', async () => {
+      const enabled = masterPowerSwitch.checked;
+      isVcpGloballyEnabled = enabled;
+      await chrome.storage.local.set({ vcp_enabled: enabled });
+      updateMasterPowerUI(enabled);
+
+      // Notify all tabs
+      try {
+        const allTabs = await chrome.tabs.query({});
+        for (const t of allTabs) {
+          if (t.id) {
+            chrome.tabs.sendMessage(t.id, { action: 'SET_VCP_ENABLED', enabled }).catch(() => {});
+          }
+        }
+      } catch (e) { }
+
+      // Update badge via background worker
+      chrome.runtime.sendMessage({ action: 'SET_VCP_ENABLED', enabled });
+
+      showToast(enabled ? '⚡ VCP Enabled (Active)' : '⏸️ VCP Turned OFF (Dormant)', enabled ? 'success' : 'warning');
+    });
+  }
 
   // 4. Inspection Mode Toggle
   if (activeTab && activeTab.id) {
@@ -405,6 +471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initialize
+  await loadMasterPowerState();
   checkBridgeHealth();
   await loadProjectSettings();
   await loadPins();

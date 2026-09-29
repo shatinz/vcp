@@ -429,6 +429,109 @@
       background: #16a34a;
     }
 
+    .vcp-hud-divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.18);
+      margin: 0 1px;
+    }
+
+    .vcp-hud-minimize {
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      padding: 6px 9px;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .vcp-hud-minimize:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .vcp-hud-power {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      padding: 6px 9px;
+      font-size: 12px;
+    }
+
+    .vcp-hud-power:hover {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    }
+
+    /* Floating Minimized Orb */
+    .vcp-hud-orb {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(99, 102, 241, 0.6);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(99, 102, 241, 0.4);
+      cursor: pointer;
+      pointer-events: auto;
+      z-index: 2147483646;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+
+    .vcp-hud-orb:hover {
+      transform: scale(1.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 22px rgba(99, 102, 241, 0.7);
+    }
+
+    .vcp-orb-logo {
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .vcp-orb-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #4f46e5;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .vcp-toast {
+      position: fixed;
+      bottom: 80px;
+      right: 24px;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+      z-index: 2147483647;
+      animation: vcp-pop-in 0.2s ease-out;
+      pointer-events: auto;
+    }
+
     /* In-Page Dispatch Modal */
     .vcp-dispatch-modal {
       position: fixed;
@@ -470,7 +573,9 @@
   `;
 
   // State
-  let isInspectMode = true; // Pin Mode is active by default for fast interaction
+  let isVcpEnabled = true; // Master VCP Engine state (saved in chrome.storage.local)
+  let isInspectMode = false; // Safe default: Pin Mode is OFF initially to preserve normal web browsing
+  let isHudMinimized = false; // Whether floating HUD is collapsed into a compact orb
   let currentHoverElement = null;
   let activePopover = null;
   let activeModal = null;
@@ -481,6 +586,7 @@
   let highlightLabel = null;
   let pinsContainer = null;
   let hudContainer = null;
+  let orbContainer = null;
   let lastUrl = window.location.href;
 
   // --- Normalization ---
@@ -662,6 +768,9 @@
     // Floating HUD Dock
     initHud();
 
+    // Floating Minimized Orb
+    initOrb();
+
     // Mount to document.documentElement
     document.documentElement.appendChild(hostElement);
   }
@@ -670,16 +779,23 @@
     hudContainer = document.createElement('div');
     hudContainer.className = 'vcp-hud';
     hudContainer.innerHTML = `
-      <div class="vcp-hud-brand">
+      <div class="vcp-hud-brand" title="Visual Click Prompt (VCP) for AI Agents">
         <div class="vcp-hud-dot"></div>
         <span class="vcp-hud-title">VCP</span>
       </div>
-      <button class="vcp-hud-btn vcp-hud-toggle active" id="vcp-toggle-inspect">
-        <span>🎯 Pin Mode: ON</span>
+      <button class="vcp-hud-btn vcp-hud-toggle" id="vcp-toggle-inspect" title="Toggle Click-to-Pin Mode (Alt+Shift+V)">
+        <span>🎯 Pin Mode: OFF</span>
       </button>
       <span class="vcp-hud-counter" id="vcp-pin-counter">0 pins</span>
-      <button class="vcp-hud-btn vcp-hud-action" id="vcp-send-btn">
+      <button class="vcp-hud-btn vcp-hud-action" id="vcp-send-btn" title="Review and dispatch pins to Antigravity">
         <span>⚡ Send</span>
+      </button>
+      <div class="vcp-hud-divider"></div>
+      <button class="vcp-hud-btn vcp-hud-minimize" id="vcp-hud-minimize" title="Minimize HUD to a compact floating orb">
+        <span>—</span>
+      </button>
+      <button class="vcp-hud-btn vcp-hud-power" id="vcp-hud-power" title="Turn OFF VCP on this page (Alt+Shift+V to toggle)">
+        <span style="font-size: 13px; font-weight: 900;">⏻</span>
       </button>
     `;
 
@@ -693,7 +809,90 @@
       openDispatchModal();
     });
 
+    const minBtn = hudContainer.querySelector('#vcp-hud-minimize');
+    minBtn.addEventListener('click', () => {
+      setHudMinimized(true);
+    });
+
+    const powerBtn = hudContainer.querySelector('#vcp-hud-power');
+    powerBtn.addEventListener('click', () => {
+      setVcpEnabled(false);
+      showInPageToast('⏸️ VCP turned OFF. Press Alt+Shift+V or click extension icon to re-enable.');
+    });
+
     shadowRoot.appendChild(hudContainer);
+  }
+
+  function initOrb() {
+    orbContainer = document.createElement('div');
+    orbContainer.className = 'vcp-hud-orb';
+    orbContainer.title = 'VCP Active — Click to expand HUD';
+    orbContainer.style.display = 'none';
+    orbContainer.innerHTML = `
+      <span class="vcp-orb-logo">VCP</span>
+      <span class="vcp-orb-badge" id="vcp-orb-badge">0</span>
+    `;
+
+    orbContainer.addEventListener('click', () => {
+      setHudMinimized(false);
+    });
+
+    shadowRoot.appendChild(orbContainer);
+  }
+
+  function setVcpEnabled(enabled, persist = true) {
+    isVcpEnabled = enabled;
+    if (persist) {
+      chrome.storage.local.set({ vcp_enabled: enabled }).catch(() => {});
+    }
+    applyVcpEnabledState();
+  }
+
+  function applyVcpEnabledState() {
+    if (!hostElement) return;
+
+    if (!isVcpEnabled) {
+      setInspectMode(false);
+      if (activePopover) closePopover();
+      if (activeModal) closeModal();
+      if (highlightBox) highlightBox.style.display = 'none';
+      hostElement.style.display = 'none';
+    } else {
+      hostElement.style.display = 'block';
+      if (pinsContainer) pinsContainer.style.display = 'block';
+
+      if (isHudMinimized) {
+        if (hudContainer) hudContainer.style.display = 'none';
+        if (orbContainer) orbContainer.style.display = 'flex';
+      } else {
+        if (hudContainer) hudContainer.style.display = 'flex';
+        if (orbContainer) orbContainer.style.display = 'none';
+      }
+      updateHudCounter();
+    }
+  }
+
+  function setHudMinimized(minimized, persist = true) {
+    isHudMinimized = minimized;
+    if (persist) {
+      chrome.storage.local.set({ vcp_hud_minimized: minimized }).catch(() => {});
+    }
+    applyVcpEnabledState();
+  }
+
+  function showInPageToast(message) {
+    if (!shadowRoot) return;
+    const existing = shadowRoot.querySelector('.vcp-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'vcp-toast';
+    toast.textContent = message;
+    shadowRoot.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast && toast.parentNode) toast.remove();
+    }, 2800);
   }
 
   function setInspectMode(active) {
@@ -718,11 +917,15 @@
     if (counter) {
       counter.textContent = `${pagePins.length} pin${pagePins.length === 1 ? '' : 's'}`;
     }
+    const orbBadge = orbContainer?.querySelector('#vcp-orb-badge');
+    if (orbBadge) {
+      orbBadge.textContent = String(pagePins.length);
+    }
   }
 
   // --- Hover Inspector ---
   function onPointerMove(e) {
-    if (!isInspectMode || activePopover || activeModal) return;
+    if (!isVcpEnabled || !isInspectMode || activePopover || activeModal) return;
 
     if (e.composedPath().includes(hostElement)) {
       if (highlightBox) highlightBox.style.display = 'none';
@@ -751,7 +954,7 @@
 
   // --- Click Capture & Popover Trigger ---
   function onPointerClick(e) {
-    if (!isInspectMode) return;
+    if (!isVcpEnabled || !isInspectMode) return;
 
     // If clicked inside VCP Shadow DOM, allow normal interaction
     if (e.composedPath().includes(hostElement)) {
@@ -1230,17 +1433,33 @@
 
     if (e.altKey && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
       e.preventDefault();
-      setInspectMode(!isInspectMode);
+      if (!isVcpEnabled) {
+        setVcpEnabled(true);
+        setInspectMode(true);
+        showInPageToast('⚡ VCP Enabled & Pin Mode ON');
+      } else {
+        setInspectMode(!isInspectMode);
+        showInPageToast(isInspectMode ? '🎯 Pin Mode: ON (Click any element)' : '⏸️ Pin Mode: OFF (Normal browsing)');
+      }
     }
   });
 
   // --- Inter-Process Communication ---
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.action === 'TOGGLE_INSPECT_MODE') {
-      setInspectMode(!isInspectMode);
-      sendResponse({ isInspectMode });
+    if (msg.action === 'SET_VCP_ENABLED') {
+      setVcpEnabled(msg.enabled, false);
+      sendResponse({ success: true, isVcpEnabled });
+    } else if (msg.action === 'TOGGLE_INSPECT_MODE') {
+      if (!isVcpEnabled || msg.forceEnable) {
+        setVcpEnabled(true, true);
+        setInspectMode(true);
+      } else {
+        setInspectMode(!isInspectMode);
+      }
+      sendResponse({ isInspectMode, isVcpEnabled });
     } else if (msg.action === 'GET_PAGE_STATUS' || msg.action === 'GET_ALL_PINS') {
       sendResponse({
+        isVcpEnabled,
         isInspectMode,
         url: window.location.href,
         pins: pagePins
@@ -1271,6 +1490,27 @@
     window.addEventListener('pointermove', onPointerMove, { capture: true, passive: true });
     window.addEventListener('click', onPointerClick, { capture: true });
     loadPinsFromStorage();
+
+    // Load persisted master enabled & minimized states
+    chrome.storage.local.get(['vcp_enabled', 'vcp_hud_minimized'], (result) => {
+      isVcpEnabled = result.vcp_enabled !== false;
+      isHudMinimized = result.vcp_hud_minimized === true;
+      applyVcpEnabledState();
+    });
+
+    // Listen to storage changes across tabs
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local') {
+        if ('vcp_enabled' in changes) {
+          isVcpEnabled = changes.vcp_enabled.newValue !== false;
+          applyVcpEnabledState();
+        }
+        if ('vcp_hud_minimized' in changes) {
+          isHudMinimized = changes.vcp_hud_minimized.newValue === true;
+          applyVcpEnabledState();
+        }
+      }
+    });
   }
 
   if (document.readyState === 'loading') {
