@@ -5,21 +5,21 @@
 
 const LOCAL_BRIDGE_URL = 'http://127.0.0.1:8765';
 
-// Keyboard shortcut command listener
+// Keyboard shortcut command listener (Alt+Shift+V)
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command === 'toggle-inspect') {
+  if (command === 'toggle-inspect' || command === 'toggle-vcp') {
     const data = await chrome.storage.local.get(['vcp_enabled']);
-    const isEnabled = data.vcp_enabled !== false;
-    if (!isEnabled) {
-      await chrome.storage.local.set({ vcp_enabled: true });
-      await updateGlobalBadge(true);
-    }
+    const currentlyEnabled = data.vcp_enabled !== false;
+    const nextEnabled = !currentlyEnabled;
+    await chrome.storage.local.set({ vcp_enabled: nextEnabled });
+    await updateGlobalBadge(nextEnabled);
+
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
         chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'TOGGLE_INSPECT_MODE',
-          forceEnable: !isEnabled
-        });
+          action: 'SET_VCP_ENABLED',
+          enabled: nextEnabled
+        }).catch(() => {});
       }
     });
   }

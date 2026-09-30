@@ -340,6 +340,14 @@
       background: #fee2e2;
     }
 
+    :host([hidden]),
+    .vcp-hidden {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
+    }
+
     /* Floating Docked HUD */
     .vcp-hud {
       position: fixed;
@@ -741,7 +749,7 @@
       height: 100vh !important;
       pointer-events: none !important;
       z-index: 2147483647 !important;
-      display: block !important;
+      display: none !important;
       overflow: visible !important;
     `;
 
@@ -816,8 +824,7 @@
 
     const powerBtn = hudContainer.querySelector('#vcp-hud-power');
     powerBtn.addEventListener('click', () => {
-      setVcpEnabled(false);
-      showInPageToast('⏸️ VCP turned OFF. Press Alt+Shift+V or click extension icon to re-enable.');
+      setVcpEnabled(false, true);
     });
 
     shadowRoot.appendChild(hudContainer);
@@ -844,8 +851,23 @@
     isVcpEnabled = enabled;
     if (persist) {
       chrome.storage.local.set({ vcp_enabled: enabled }).catch(() => {});
+      chrome.runtime.sendMessage({ action: 'SET_VCP_ENABLED', enabled }).catch(() => {});
     }
     applyVcpEnabledState();
+  }
+
+  let lastToggleTimestamp = 0;
+  function toggleVcpPower() {
+    const now = Date.now();
+    if (now - lastToggleTimestamp < 350) return;
+    lastToggleTimestamp = now;
+
+    const nextState = !isVcpEnabled;
+    setVcpEnabled(nextState, true);
+    if (nextState) {
+      setInspectMode(true);
+      showInPageToast('⚡ VCP Enabled & Pin Mode ON');
+    }
   }
 
   function applyVcpEnabledState() {
@@ -855,18 +877,46 @@
       setInspectMode(false);
       if (activePopover) closePopover();
       if (activeModal) closeModal();
-      if (highlightBox) highlightBox.style.display = 'none';
-      hostElement.style.display = 'none';
+      if (highlightBox) highlightBox.style.setProperty('display', 'none', 'important');
+      if (pinsContainer) pinsContainer.style.setProperty('display', 'none', 'important');
+      if (hudContainer) {
+        hudContainer.style.setProperty('display', 'none', 'important');
+        hudContainer.classList.add('vcp-hidden');
+      }
+      if (orbContainer) {
+        orbContainer.style.setProperty('display', 'none', 'important');
+        orbContainer.classList.add('vcp-hidden');
+      }
+
+      hostElement.style.setProperty('display', 'none', 'important');
+      hostElement.style.setProperty('visibility', 'hidden', 'important');
+      hostElement.style.setProperty('pointer-events', 'none', 'important');
+      hostElement.setAttribute('hidden', '');
     } else {
-      hostElement.style.display = 'block';
-      if (pinsContainer) pinsContainer.style.display = 'block';
+      hostElement.removeAttribute('hidden');
+      hostElement.style.setProperty('display', 'block', 'important');
+      hostElement.style.setProperty('visibility', 'visible', 'important');
+      hostElement.style.setProperty('pointer-events', 'none', 'important');
+      if (pinsContainer) pinsContainer.style.setProperty('display', 'block', 'important');
 
       if (isHudMinimized) {
-        if (hudContainer) hudContainer.style.display = 'none';
-        if (orbContainer) orbContainer.style.display = 'flex';
+        if (hudContainer) {
+          hudContainer.style.setProperty('display', 'none', 'important');
+          hudContainer.classList.add('vcp-hidden');
+        }
+        if (orbContainer) {
+          orbContainer.style.setProperty('display', 'flex', 'important');
+          orbContainer.classList.remove('vcp-hidden');
+        }
       } else {
-        if (hudContainer) hudContainer.style.display = 'flex';
-        if (orbContainer) orbContainer.style.display = 'none';
+        if (hudContainer) {
+          hudContainer.style.setProperty('display', 'flex', 'important');
+          hudContainer.classList.remove('vcp-hidden');
+        }
+        if (orbContainer) {
+          orbContainer.style.setProperty('display', 'none', 'important');
+          orbContainer.classList.add('vcp-hidden');
+        }
       }
       updateHudCounter();
     }
@@ -1528,22 +1578,18 @@
 
     if (e.altKey && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
       e.preventDefault();
-      if (!isVcpEnabled) {
-        setVcpEnabled(true);
-        setInspectMode(true);
-        showInPageToast('⚡ VCP Enabled & Pin Mode ON');
-      } else {
-        setInspectMode(!isInspectMode);
-        showInPageToast(isInspectMode ? '🎯 Pin Mode: ON (Click any element)' : '⏸️ Pin Mode: OFF (Normal browsing)');
-      }
+      toggleVcpPower();
     }
-  });
+  }, { capture: true });
 
   // --- Inter-Process Communication ---
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === 'SET_VCP_ENABLED') {
       setVcpEnabled(msg.enabled, false);
       sendResponse({ success: true, isVcpEnabled });
+    } else if (msg.action === 'TOGGLE_VCP_POWER') {
+      toggleVcpPower();
+      sendResponse({ success: true, isVcpEnabled, isInspectMode });
     } else if (msg.action === 'TOGGLE_INSPECT_MODE') {
       if (!isVcpEnabled || msg.forceEnable) {
         setVcpEnabled(true, true);

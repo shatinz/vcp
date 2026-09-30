@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         powerBadge.className = 'power-badge';
         powerBadge.textContent = 'ON';
       }
-      if (powerSubtext) powerSubtext.textContent = 'Visual click prompting active';
+      if (powerSubtext) powerSubtext.textContent = 'Visual click prompting active (Alt+Shift+V)';
       document.querySelectorAll('.section').forEach(sec => sec.classList.remove('vcp-dormant-dimmed'));
       const footer = document.querySelector('.footer');
       if (footer) footer.classList.remove('vcp-dormant-dimmed');
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         powerBadge.className = 'power-badge disabled';
         powerBadge.textContent = 'OFF';
       }
-      if (powerSubtext) powerSubtext.textContent = 'Dormant — zero overhead on pages';
+      if (powerSubtext) powerSubtext.textContent = 'Dormant — zero overhead on pages (Alt+Shift+V)';
       document.querySelectorAll('.section').forEach(sec => sec.classList.add('vcp-dormant-dimmed'));
       const footer = document.querySelector('.footer');
       if (footer) footer.classList.add('vcp-dormant-dimmed');
@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       inspectBtnText.textContent = 'Turn OFF Pin Mode';
     } else {
       toggleInspectBtn.classList.remove('active');
-      inspectBtnText.textContent = 'Turn ON Pin Mode (Alt+Shift+V)';
+      inspectBtnText.textContent = 'Turn ON Pin Mode';
     }
   }
 
