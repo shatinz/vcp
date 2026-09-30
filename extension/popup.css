@@ -628,22 +628,30 @@ body {
   color: var(--text-muted);
 }
 
-.btn-confirm-delete {
-  background: rgba(239, 68, 68, 0.25) !important;
-  color: #fca5a5 !important;
-  border: 1px solid rgba(239, 68, 68, 0.6) !important;
-  font-weight: 700 !important;
-  cursor: pointer;
-  animation: vcp-pulse-red 0.8s infinite alternate ease-in-out;
+#clear-pins-btn {
+  background: rgba(239, 68, 68, 0.08);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  transition: all 0.15s ease;
+  font-weight: 600;
 }
 
-@keyframes vcp-pulse-red {
-  0% {
-    box-shadow: 0 0 2px rgba(239, 68, 68, 0.3);
-  }
-  100% {
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
-  }
+#clear-pins-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+#clear-pins-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+#clear-pins-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-dim);
 }
 
 .btn:disabled {

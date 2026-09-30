@@ -1118,13 +1118,9 @@
     if (existingPin) {
       const deleteBtn = popover.querySelector('#vcp-pop-delete');
       if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => {
-          pagePins = pagePins.filter(p => p.id !== existingPin.id);
-          pagePins.forEach((p, idx) => p.index = idx + 1);
-          savePinsToStorage();
-          closePopover();
-          renderPinDots();
-          updateHudCounter();
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deletePinById(existingPin.id);
         });
       }
     }
@@ -1397,31 +1393,57 @@
     try {
       const data = await chrome.storage.local.get([storageKey]);
       let allPins = data[storageKey] || [];
-      allPins = allPins.filter(p => p.normalizedPath !== norm.path);
+      const currentIds = new Set(pagePins.map(p => p.id));
+      allPins = allPins.filter(p => !currentIds.has(p.id) && p.normalizedPath !== norm.path);
       allPins = allPins.concat(pagePins);
       await chrome.storage.local.set({ [storageKey]: allPins });
 
       chrome.runtime.sendMessage({
         action: 'UPDATE_BADGE',
         count: pagePins.length
-      });
+      }).catch(() => {});
     } catch (e) {
       console.warn('VCP: Could not save pins', e);
     }
   }
 
-  async function clearPagePins() {
-    pagePins = [];
+  async function clearPagePins(pinIds, targetPath) {
+    const idsToDelete = new Set(pinIds && pinIds.length ? pinIds : pagePins.map(p => p.id));
+
+    // Clear in-memory pagePins
+    pagePins = pagePins.filter(p => !idsToDelete.has(p.id));
+    if (!pinIds || !pinIds.length) {
+      pagePins = [];
+    }
+
+    // Immediately remove pin dots from DOM
     if (pinsContainer) pinsContainer.innerHTML = '';
     renderPinDots();
     updateHudCounter();
     if (activePopover) closePopover();
     if (activeModal) closeModal();
-    await savePinsToStorage();
+
+    const norm = normalizeUrl(window.location.href);
+    const storageKey = `vcp_pins_${norm.origin}`;
+    try {
+      const data = await chrome.storage.local.get([storageKey]);
+      let allPins = data[storageKey] || [];
+      const matchPath = targetPath || norm.path;
+      allPins = allPins.filter(p => {
+        if (idsToDelete.has(p.id)) return false;
+        if (p.normalizedPath === matchPath || p.normalizedPath === norm.path) return false;
+        return true;
+      });
+      await chrome.storage.local.set({ [storageKey]: allPins });
+    } catch (e) {
+      console.warn('VCP: Could not clear pins from storage', e);
+    }
+
     chrome.runtime.sendMessage({
       action: 'UPDATE_BADGE',
-      count: 0
-    });
+      count: pagePins.length
+    }).catch(() => {});
+
     showInPageToast('🗑️ All pins on this page deleted');
   }
 
@@ -1440,22 +1462,34 @@
     chrome.runtime.sendMessage({
       action: 'UPDATE_BADGE',
       count: 0
-    });
+    }).catch(() => {});
     showInPageToast('🗑️ All website pins deleted');
   }
 
   async function deletePinById(pinId) {
+    if (!pinId) return;
     pagePins = pagePins.filter(p => p.id !== pinId);
     pagePins.forEach((p, idx) => p.index = idx + 1);
     if (pinsContainer) pinsContainer.innerHTML = '';
     renderPinDots();
     updateHudCounter();
     if (activePopover) closePopover();
-    await savePinsToStorage();
+
+    const norm = normalizeUrl(window.location.href);
+    const storageKey = `vcp_pins_${norm.origin}`;
+    try {
+      const data = await chrome.storage.local.get([storageKey]);
+      let allPins = data[storageKey] || [];
+      allPins = allPins.filter(p => p.id !== pinId);
+      await chrome.storage.local.set({ [storageKey]: allPins });
+    } catch (e) {
+      console.warn('VCP: Could not delete pin from storage', e);
+    }
+
     chrome.runtime.sendMessage({
       action: 'UPDATE_BADGE',
       count: pagePins.length
-    });
+    }).catch(() => {});
   }
 
   // --- SPA Routing ---
@@ -1519,17 +1553,20 @@
       }
       sendResponse({ isInspectMode, isVcpEnabled });
     } else if (msg.action === 'GET_PAGE_STATUS' || msg.action === 'GET_ALL_PINS') {
+      const norm = normalizeUrl(window.location.href);
       sendResponse({
         isVcpEnabled,
         isInspectMode,
         url: window.location.href,
+        origin: norm.origin,
+        normalizedPath: norm.path,
         pins: pagePins
       });
     } else if (msg.action === 'ROUTE_CHANGED') {
       onRouteChanged(msg.url);
       sendResponse({ success: true });
     } else if (msg.action === 'CLEAR_PAGE_PINS') {
-      clearPagePins();
+      clearPagePins(msg.pinIds, msg.activePath);
       sendResponse({ success: true });
     } else if (msg.action === 'CLEAR_ALL_PINS') {
       clearAllWebsitePins();
@@ -1577,7 +1614,16 @@
         const norm = normalizeUrl(window.location.href);
         const storageKey = `vcp_pins_${norm.origin}`;
         if (storageKey in changes) {
-          loadPinsFromStorage();
+          const newAllPins = Array.isArray(changes[storageKey].newValue) ? changes[storageKey].newValue : [];
+          pagePins = newAllPins.filter(p => p.normalizedPath === norm.path);
+          pagePins.sort((a, b) => a.index - b.index);
+          if (pinsContainer) pinsContainer.innerHTML = '';
+          renderPinDots();
+          updateHudCounter();
+          chrome.runtime.sendMessage({
+            action: 'UPDATE_BADGE',
+            count: pagePins.length
+          }).catch(() => {});
         }
         if ('vcp_enabled' in changes) {
           isVcpEnabled = changes.vcp_enabled.newValue !== false;

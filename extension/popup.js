@@ -37,27 +37,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   let allWebsitePins = [];
   let currentPagePins = [];
 
-  // 1. Get Active Browser Tab
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tabs && tabs[0]) {
-    activeTab = tabs[0];
-    activeUrl = activeTab.url || '';
+  // Helper for URL normalization
+  function normalizeUrlString(rawUrl) {
     try {
-      const u = new URL(activeUrl);
-      activeOrigin = u.origin;
+      const u = new URL(rawUrl);
       const cleanParams = new URLSearchParams();
       for (const [k, v] of u.searchParams.entries()) {
-        if (!k.startsWith('utm_') && k !== 'gclid' && k !== 'fbclid') {
+        if (!k.startsWith('utm_') && k !== 'gclid' && k !== 'fbclid' && k !== 'ref') {
           cleanParams.append(k, v);
         }
       }
       cleanParams.sort();
       const search = cleanParams.toString() ? `?${cleanParams.toString()}` : '';
-      activePath = (u.pathname.replace(/\/+$/, '') || '/') + search;
+      const path = u.pathname.replace(/\/+$/, '') || '/';
+      return {
+        origin: u.origin,
+        path: `${path}${search}`
+      };
     } catch (e) {
-      activeOrigin = 'global';
-      activePath = '/';
+      return { origin: 'global', path: '/' };
     }
+  }
+
+  // 1. Get Active Browser Tab
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tabs && tabs[0]) {
+    activeTab = tabs[0];
+    activeUrl = activeTab.url || '';
+    const norm = normalizeUrlString(activeUrl);
+    activeOrigin = norm.origin;
+    activePath = norm.path;
   }
 
   const startBridgeBtn = document.getElementById('start-bridge-btn');
@@ -224,7 +233,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (activeTab && activeTab.id) {
     chrome.tabs.sendMessage(activeTab.id, { action: 'GET_PAGE_STATUS' }, (res) => {
       if (chrome.runtime.lastError || !res) return;
-      updateInspectButton(res.isInspectMode);
+      if (typeof res.isInspectMode === 'boolean') {
+        updateInspectButton(res.isInspectMode);
+      }
+      if (res.origin) activeOrigin = res.origin;
+      if (res.normalizedPath) activePath = res.normalizedPath;
     });
   }
 
@@ -249,30 +262,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 5. Load & Render Pins
   async function loadPins() {
-    // 1. Try to query active tab directly first
-    if (activeTab && activeTab.id) {
-      try {
-        const res = await chrome.tabs.sendMessage(activeTab.id, { action: 'GET_ALL_PINS' });
-        if (res && Array.isArray(res.pins)) {
-          currentPagePins = res.pins;
-        }
-      } catch (e) { }
+    if (!activeOrigin) {
+      const norm = normalizeUrlString(activeUrl);
+      activeOrigin = norm.origin;
+      activePath = norm.path;
     }
 
-    // 2. Also load from storage
-    if (activeOrigin) {
-      const storageKey = `vcp_pins_${activeOrigin}`;
-      const data = await chrome.storage.local.get([storageKey]);
-      allWebsitePins = data[storageKey] || [];
-      if (currentPagePins.length === 0) {
-        currentPagePins = allWebsitePins.filter(p => p.normalizedPath === activePath);
+    const storageKey = `vcp_pins_${activeOrigin}`;
+    const data = await chrome.storage.local.get([storageKey]);
+    allWebsitePins = Array.isArray(data[storageKey]) ? data[storageKey] : [];
+
+    // Filter current page pins: matches activePath OR matching URL without hash
+    currentPagePins = allWebsitePins.filter(p => {
+      if (p.normalizedPath === activePath) return true;
+      if (p.url && activeUrl) {
+        const cleanP = p.url.split('#')[0].replace(/\/+$/, '');
+        const cleanA = activeUrl.split('#')[0].replace(/\/+$/, '');
+        if (cleanP === cleanA) return true;
       }
-    }
+      return false;
+    });
 
-    countCurrent.textContent = currentPagePins.length;
-    countAll.textContent = allWebsitePins.length;
+    if (countCurrent) countCurrent.textContent = currentPagePins.length;
+    if (countAll) countAll.textContent = allWebsitePins.length;
 
     renderPinsList();
+    updateClearPinsButton();
   }
 
   function renderPinsList() {
@@ -297,7 +312,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       item.innerHTML = `
         <div class="pin-item-header">
           <span class="pin-item-badge">📌 Pin #${pin.index}</span>
-          <span class="pin-item-target" title="${pin.anchor.cssSelector || pin.anchor.xpath}">&lt;${pin.anchor.tagName}&gt;</span>
+          <span class="pin-item-target" title="${pin.anchor?.cssSelector || pin.anchor?.xpath || ''}">&lt;${pin.anchor?.tagName || 'element'}&gt;</span>
         </div>
         <div class="pin-item-prompt">${escapeHtml(pin.prompt)}</div>
         <div class="pin-item-actions">
@@ -326,10 +341,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function deletePin(pinId) {
+    if (!pinId) return;
     const storageKey = `vcp_pins_${activeOrigin}`;
     allWebsitePins = allWebsitePins.filter(p => p.id !== pinId);
-    // Re-index
-    currentPagePins = allWebsitePins.filter(p => p.normalizedPath === activePath);
+    currentPagePins = currentPagePins.filter(p => p.id !== pinId);
     currentPagePins.forEach((p, idx) => p.index = idx + 1);
 
     await chrome.storage.local.set({ [storageKey]: allWebsitePins });
@@ -339,24 +354,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       chrome.tabs.sendMessage(activeTab.id, { action: 'DELETE_PIN', pinId }).catch(() => {});
     }
 
-    await loadPins();
+    if (countCurrent) countCurrent.textContent = currentPagePins.length;
+    if (countAll) countAll.textContent = allWebsitePins.length;
+    renderPinsList();
+    updateClearPinsButton();
     showToast('✓ Pin deleted', 'success');
   }
 
-  // 2-Step Confirmation for Clear Pins (No unreliable window.confirm in extension popups!)
-  let clearConfirmPending = false;
-  let clearConfirmTimeout = null;
-
   function updateClearPinsButton() {
     if (!clearPinsBtn) return;
-    if (clearConfirmPending) {
-      clearPinsBtn.textContent = '⚠️ Confirm Delete?';
-      clearPinsBtn.classList.add('btn-confirm-delete');
-      clearPinsBtn.disabled = false;
-      return;
-    }
-
     clearPinsBtn.classList.remove('btn-confirm-delete');
+
     if (activeFilter === 'current') {
       const count = currentPagePins.length;
       clearPinsBtn.textContent = `Clear Page Pins (${count})`;
@@ -370,73 +378,98 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function resetClearConfirm() {
-    clearConfirmPending = false;
-    if (clearConfirmTimeout) {
-      clearTimeout(clearConfirmTimeout);
-      clearConfirmTimeout = null;
-    }
-    updateClearPinsButton();
-  }
-
   // Tabs Switching
   tabCurrent.addEventListener('click', () => {
     activeFilter = 'current';
     tabCurrent.classList.add('active');
     tabAll.classList.remove('active');
-    resetClearConfirm();
     renderPinsList();
+    updateClearPinsButton();
   });
 
   tabAll.addEventListener('click', () => {
     activeFilter = 'all';
     tabAll.classList.add('active');
     tabCurrent.classList.remove('active');
-    resetClearConfirm();
     renderPinsList();
+    updateClearPinsButton();
   });
 
-  // Clear Pins Handler with 2-Step Inline Confirmation
+  // Clear Pins Handler - Immediate, Guaranteed 1-Click Execution
   clearPinsBtn.addEventListener('click', async () => {
     const isCurrent = activeFilter === 'current';
-    const targetCount = isCurrent ? currentPagePins.length : allWebsitePins.length;
+    const targetPins = isCurrent ? currentPagePins : allWebsitePins;
+    const targetCount = targetPins.length;
 
     if (targetCount === 0) return;
 
-    if (!clearConfirmPending) {
-      clearConfirmPending = true;
-      updateClearPinsButton();
-      clearConfirmTimeout = setTimeout(() => {
-        resetClearConfirm();
-      }, 3500);
-      return;
-    }
-
-    // Confirmed! Execute deletion
-    resetClearConfirm();
     const storageKey = `vcp_pins_${activeOrigin}`;
 
     if (isCurrent) {
-      allWebsitePins = allWebsitePins.filter(p => p.normalizedPath !== activePath);
+      const idsToDelete = new Set(currentPagePins.map(p => p.id));
+      allWebsitePins = allWebsitePins.filter(p => {
+        if (idsToDelete.has(p.id)) return false;
+        if (p.normalizedPath === activePath) return false;
+        if (p.url && activeUrl) {
+          const cleanP = p.url.split('#')[0].replace(/\/+$/, '');
+          const cleanA = activeUrl.split('#')[0].replace(/\/+$/, '');
+          if (cleanP === cleanA) return false;
+        }
+        return true;
+      });
       currentPagePins = [];
+
       await chrome.storage.local.set({ [storageKey]: allWebsitePins });
 
       if (activeTab && activeTab.id) {
-        chrome.tabs.sendMessage(activeTab.id, { action: 'CLEAR_PAGE_PINS' }).catch(() => {});
+        chrome.tabs.sendMessage(activeTab.id, {
+          action: 'CLEAR_PAGE_PINS',
+          pinIds: Array.from(idsToDelete),
+          activePath: activePath
+        }).catch(() => {});
       }
-      showToast(`✓ Cleared ${targetCount} page pins`, 'success');
+
+      showToast(`✓ Cleared ${targetCount} page pin${targetCount === 1 ? '' : 's'}`, 'success');
     } else {
       allWebsitePins = [];
       currentPagePins = [];
+
       await chrome.storage.local.remove([storageKey]);
 
       if (activeTab && activeTab.id) {
         chrome.tabs.sendMessage(activeTab.id, { action: 'CLEAR_ALL_PINS' }).catch(() => {});
       }
-      showToast(`✓ Deleted all ${targetCount} website pins`, 'success');
+
+      showToast(`✓ Deleted all ${targetCount} website pin${targetCount === 1 ? '' : 's'}`, 'success');
     }
 
-    await loadPins();
+    if (countCurrent) countCurrent.textContent = '0';
+    if (countAll) countAll.textContent = allWebsitePins.length;
+    renderPinsList();
+    updateClearPinsButton();
+  });
+
+  // Real-time synchronization when pins are modified in page
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && activeOrigin) {
+      const storageKey = `vcp_pins_${activeOrigin}`;
+      if (storageKey in changes) {
+        allWebsitePins = Array.isArray(changes[storageKey].newValue) ? changes[storageKey].newValue : [];
+        currentPagePins = allWebsitePins.filter(p => {
+          if (p.normalizedPath === activePath) return true;
+          if (p.url && activeUrl) {
+            const cleanP = p.url.split('#')[0].replace(/\/+$/, '');
+            const cleanA = activeUrl.split('#')[0].replace(/\/+$/, '');
+            if (cleanP === cleanA) return true;
+          }
+          return false;
+        });
+        if (countCurrent) countCurrent.textContent = currentPagePins.length;
+        if (countAll) countAll.textContent = allWebsitePins.length;
+        renderPinsList();
+        updateClearPinsButton();
+      }
+    }
   });
 
   const autoTriggerCheckbox = document.getElementById('auto-trigger-checkbox');
